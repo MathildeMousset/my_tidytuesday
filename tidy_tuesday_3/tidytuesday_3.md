@@ -11,54 +11,12 @@ editor_options:
 
 Readme: *https://github.com/rfordatascience/tidytuesday/blob/master/data/2019/2019-01-15/readme.md*
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 
-library(tidyverse)
-library(lubridate)
-library(countrycode)
-library(viridis)
-theme_set(theme_light())
-
-# Import data from github
-
-agencies <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-01-15/agencies.csv")
-
-launches <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-01-15/launches.csv")
-
-
-# Get better date format in lauches
-launches <- launches %>% 
-  mutate(launch_date = ymd(launch_date))
-
-# Improve countries from agencies
-launches$agency %>% unique()
-levels(launches$state_code)
-
-launches <- launches %>% 
-  mutate(state_code_clean = fct_collapse(state_code,
-    "RU" = c("SU", "RU"),
-    "FR" = c("F", "I-ELDO", "I-ESA"),
-    "JP" = "J",
-    "IT" = "I",
-    "KY" = "CYM",
-    "GB" = "UK"
-  )) %>%
-  mutate(state_name = countrycode(state_code_clean, "iso2c", "country.name"),
-         state_name_short = fct_lump(state_name, 6)) %>%
-  replace_na(list(state_name_short = "Other")) %>% 
-  mutate(state_bloc = fct_collapse(state_code_clean,
-                                   "URSS"   = "RU",
-                                   "Europe" = c("FR", "IT", "GB", "KY"),
-                                   "North_america"     = "US",
-                                   "Asia"   = c("CN", "JP", "IN", "KR", "KP"),
-                                   "South_america" = "BR",
-                                   "Middle_east" = c("IR", "IL")))
-```
 
 # Lauches per country
 
-```{r}
+
+```r
 launches %>% 
   count(state_bloc, sort = TRUE) %>% 
   ggplot(aes(x = state_bloc, y = n)) +
@@ -68,8 +26,11 @@ launches %>%
        y = "Number of lauches")
 ```
 
+![](tidytuesday_3_files/figure-html/unnamed-chunk-1-1.png)<!-- -->
+
 The same per country
-```{r}
+
+```r
 launches %>% 
   count(state_name, state_bloc) %>% 
   ggplot(aes(x = state_name, y = n)) +
@@ -80,8 +41,11 @@ launches %>%
   facet_wrap(~state_bloc, scales = "free")
 ```
 
+![](tidytuesday_3_files/figure-html/unnamed-chunk-2-1.png)<!-- -->
 
-```{r}
+
+
+```r
 launches %>% 
   count(launch_year, state_name, state_bloc) %>% 
   ggplot(aes(x = launch_year, y = n, colour = state_bloc)) +
@@ -93,13 +57,16 @@ launches %>%
   facet_wrap(~state_name)
 ```
 
+![](tidytuesday_3_files/figure-html/unnamed-chunk-3-1.png)<!-- -->
+
 
 # Launches with time
 
 The United states begin the space race, closely followed by Russia, which dominates the number of lauch until the late nineties. After that, Russia and the US are stable and equivalent. In the early 2000, China, followed by India increase their shares of the launches.
 
 
-```{r}
+
+```r
 launches %>% 
   count(state_name, launch_year) %>% 
   mutate(state_name = fct_reorder(state_name, -n, sum)) %>% 
@@ -109,8 +76,11 @@ launches %>%
        x = "Year of launch",
        y = "Number of lauches",
        colour = "State") 
+```
 
+![](tidytuesday_3_files/figure-html/unnamed-chunk-4-1.png)<!-- -->
 
+```r
 launches %>% 
   count(state_name_short, launch_year) %>%
   mutate(state_name_short = fct_reorder(state_name_short, -n, sum)) %>% 
@@ -121,7 +91,11 @@ launches %>%
        x = "Year of launch",
        y = "Number of lauches",
        colour = "State")
+```
 
+![](tidytuesday_3_files/figure-html/unnamed-chunk-4-2.png)<!-- -->
+
+```r
 launches %>% 
   count(state_bloc, launch_year) %>%
   mutate(state_bloc = fct_reorder(state_bloc, -n, sum)) %>% 
@@ -137,12 +111,15 @@ launches %>%
   theme(panel.grid = element_blank())
 ```
 
+![](tidytuesday_3_files/figure-html/unnamed-chunk-4-3.png)<!-- -->
+
 
 # Private vs public lauches
 
 By bloc
 
-```{r}
+
+```r
 launches %>% 
   filter(state_bloc != "South_america" & state_bloc != "Middle_east") %>% 
   count(state_bloc, launch_year, agency_type) %>%
@@ -159,8 +136,11 @@ launches %>%
    theme_minimal() +
    theme(panel.grid = element_blank(),
         strip.text = element_text(face = "bold"))
+```
 
+![](tidytuesday_3_files/figure-html/unnamed-chunk-5-1.png)<!-- -->
 
+```r
 launches %>% 
   filter(state_bloc != "South_america" & state_bloc != "Middle_east") %>% 
   count(state_bloc, launch_year, agency_type) %>%
@@ -177,11 +157,13 @@ launches %>%
    theme_minimal() +
    theme(panel.grid = element_blank(),
         strip.text = element_text(face = "bold"))
-
 ```
 
+![](tidytuesday_3_files/figure-html/unnamed-chunk-5-2.png)<!-- -->
 
-```{r}
+
+
+```r
 launches %>% 
   filter(state_bloc != "South_america" & state_bloc != "Middle_east") %>% 
   select(state_bloc, launch_year, agency_type) %>% 
@@ -205,8 +187,11 @@ launches %>%
         strip.text = element_text(face = "bold"))
 ```
 
+![](tidytuesday_3_files/figure-html/unnamed-chunk-6-1.png)<!-- -->
 
-```{r}
+
+
+```r
 launches %>% 
   filter(state_bloc != "South_america" & state_bloc != "Middle_east") %>% 
   #count(state_bloc, agency_type, launch_year) %>% 
@@ -223,10 +208,13 @@ launches %>%
        y = "Number of launches")
 ```
 
+![](tidytuesday_3_files/figure-html/unnamed-chunk-7-1.png)<!-- -->
+
 
 # US vs Russia
 
-```{r}
+
+```r
 launches %>% 
   filter(state_name %in% c("United States", "Russia")) %>%
    ggplot(aes(x = launch_year, fill = state_name)) +
@@ -243,4 +231,6 @@ launches %>%
        y = "Number of launches",
        fill = "")
 ```
+
+![](tidytuesday_3_files/figure-html/unnamed-chunk-8-1.png)<!-- -->
 
