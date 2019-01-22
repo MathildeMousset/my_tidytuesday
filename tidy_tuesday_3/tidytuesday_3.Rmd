@@ -1,0 +1,39 @@
+---
+title: "Spatial lauches"
+author: "Mathilde Mousset"
+date: "22 janvier 2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+Readme: *https://github.com/rfordatascience/tidytuesday/blob/master/data/2019/2019-01-15/readme.md*
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lubridate)
+library(viridis)
+
+# Import data from github
+
+agencies <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-01-15/agencies.csv", stringsAsFactors = FALSE)
+
+launches <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-01-15/launches.csv", stringsAsFactors = FALSE)
+
+
+# Get better date format in lauches
+launches <- launches %>% 
+  mutate(launch_date = ymd(launch_date))
+
+# Improve countries from agencies
+launches$agency %>% unique()
+launches$state_code %>% unique()
+
+launches %>% 
+  mutate(state_code = )
+
+```
+
+# Explore launches
