@@ -4,6 +4,7 @@ author: "Mathilde Mousset"
 date: "23 janvier 2019"
 output: 
   prettydoc::html_pretty:
+    keep_md: yes
     theme: leonids
     highlight: github
   html_document: 
@@ -54,36 +55,7 @@ I watched part of [Dave Robinson's](https://t.co/5rBN2FPeB1) video on [how it ta
 - Some functions from the `forcats` package. I have use this package before, but I had never used the `fct_collapse` and `fct_lump` functions.  
 
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 
-library(tidyverse)
-library(lubridate)
-library(countrycode)
-library(knitr)
-library(viridis)
-
-theme_set(theme_light())
-
-my_theme <- theme(plot.title         = element_text(size = 18,
-                                               face = "bold"),
-                  plot.subtitle = element_text(size = 16),
-                  axis.title    = element_text(size = 15,
-                                               face = "bold",
-                                               vjust = 0.1),
-                  axis.text     = element_text(size = 15),
-                  legend.title  = element_text(size = 15, 
-                                               face = "bold"),
-                  legend.text   = element_text(size = 12),
-                strip.text      = element_text(size = 15, 
-                                               face = "bold"))
-
-# Import data from github
-
-agencies <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-01-15/agencies.csv")
-
-launches <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-01-15/launches.csv")
-```
 
 
 # Preparing the data
@@ -92,7 +64,8 @@ I focused mostly on the `launches` table. It was already tidy, so I did not perf
 
 First, I used the `lubridate` package to get the date into a nice, tidy date format. In the end, I don't think I used that column, but anyway, I need to get fluent with dates in R. Here, the `ymd()` function take the `launch_date` and turns it into a year-month-day format.
 
-```{r}
+
+```r
 # Get better date format in lauches
 launches <- launches %>% 
   mutate(launch_date = ymd(launch_date))
@@ -100,15 +73,19 @@ launches <- launches %>%
 
 I then tried to improve the country names. Some of the code are familiar, some are not, I had to do a little search.  
 
-```{r, echo = FALSE}
-levels(launches$state_code)
+
+```
+##  [1] "BR"     "CN"     "CYM"    "F"      "I"      "I-ELDO" "I-ESA" 
+##  [8] "IL"     "IN"     "IR"     "J"      "KP"     "KR"     "RU"    
+## [15] "SU"     "UK"     "US"
 ```
 
 I used the `countrycode` package to obtain the full names of the countries. Since the `countrycode()` function takes ISO codes, I manually changed the provided code to ISO code when necessary. I also collapsed the Soviet Union and current Russia into a Russia state.
 
 The `fct_collapse` function allowed us to collapse the levels of a factor into a new level. Here I collapsed SU and RU into RU for example, and changed the name of some factors.
 
-```{r}
+
+```r
 launches$state_code_clean <- fct_collapse(launches$state_code,
     "RU" = c("SU", "RU"),
     "FR" = c("F", "I-ELDO", "I-ESA"),
@@ -120,7 +97,8 @@ launches$state_code_clean <- fct_collapse(launches$state_code,
 
 Now that I made sure that all my country codes follow the ISO2c norm, I can use the `countrycode` function to obtain the full country names. 
 
-```{r}
+
+```r
 launches$state_name <- countrycode(launches$state_code_clean,
                                    "iso2c", 
                                    "country.name")
@@ -128,18 +106,58 @@ launches$state_name <- countrycode(launches$state_code_clean,
 launches$state_name %>% unique() %>% kable()
 ```
 
+
+
+|x              |
+|:--------------|
+|United States  |
+|France         |
+|Brazil         |
+|China          |
+|Italy          |
+|Russia         |
+|Iran           |
+|Israel         |
+|Japan          |
+|India          |
+|South Korea    |
+|North Korea    |
+|United Kingdom |
+|Cayman Islands |
+
 Sweet. 
 
 Now, that we have some human-readable names, let's have a look at how many launches each country performed.
 
-```{r}
+
+```r
 launches %>% 
   count(state_name, sort = TRUE) %>% kable()
 ```
 
+
+
+state_name           n
+---------------  -----
+Russia            3178
+United States     1716
+France             307
+China              302
+Japan              115
+India               65
+Israel              10
+Italy                9
+Iran                 8
+North Korea          5
+Cayman Islands       4
+South Korea          3
+Brazil               2
+United Kingdom       2
+
 We can see that there is a big drop between India and Israel. I will follow Dave Robinson lead here and create a variable with the six first countries, and pool the rest in "Others". To do this, I use the `fct_lump` function.
 
-```{r}
+
+```r
 launches <- launches %>%  
   mutate(state_name_short = fct_lump(state_name, 6)) %>%
   replace_na(list(state_name_short = "Other")) 
@@ -149,7 +167,8 @@ Personally, I also like the idea of pooling countries by geographical area. It d
 
 I also change the levels of the `category` column to make them more understandable.
 
-```{r}
+
+```r
 launches <- launches %>% 
   mutate(state_bloc = fct_collapse(state_code_clean,
                                    "URSS"   = "RU",
@@ -166,7 +185,8 @@ launches <- launches %>%
 
 # Lauches per geographic area and states
 
-```{r}
+
+```r
 launches %>% 
   count(state_bloc, sort = TRUE) %>% 
   ggplot(aes(x = state_bloc, y = n)) +
@@ -179,11 +199,14 @@ launches %>%
   my_theme
 ```
 
+![](README_files/figure-html/unnamed-chunk-8-1.png)<!-- -->
+
 
 
 Let's have a look at the launches across time per country.  
 
-```{r, fig.height= 10, fig.width=10}
+
+```r
 launches %>% 
   count(launch_year, state_name, state_bloc) %>% 
   ggplot(aes(x = launch_year, y = n)) +
@@ -199,11 +222,14 @@ launches %>%
   my_theme
 ```
 
+![](README_files/figure-html/unnamed-chunk-9-1.png)<!-- -->
+
 
 It is not bad, but I will use the shortened list of country as Dave Robinson did to make comparisons between countries easier.
 
 
-```{r}
+
+```r
 launches %>% 
   count(state_name_short, launch_year) %>%
   mutate(state_name_short = fct_reorder(state_name_short, -n, sum)) %>% 
@@ -221,9 +247,12 @@ launches %>%
   my_theme
 ```
 
+![](README_files/figure-html/unnamed-chunk-10-1.png)<!-- -->
+
 Lets have a look with the geographical blocs.
 
-```{r}
+
+```r
 launches %>% 
   count(state_bloc, launch_year) %>%
   mutate(state_bloc = fct_reorder(state_bloc, -n, sum)) %>% 
@@ -241,6 +270,8 @@ launches %>%
   my_theme
 ```
 
+![](README_files/figure-html/unnamed-chunk-11-1.png)<!-- -->
+
 
 I like how it is easier to see what's happening in Asia.
 
@@ -252,7 +283,8 @@ The United states began the space race, closely followed by Russia, which domina
 
 Since for a long time the race was dominated by the US and Russia, let's have a nice comparison graph between the two.
 
-```{r}
+
+```r
 launches %>% 
   filter(state_name %in% c("United States", "Russia")) %>%
    ggplot(aes(x = launch_year, fill = state_name)) +
@@ -272,12 +304,15 @@ launches %>%
   my_theme
 ```
 
+![](README_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
+
 
 # Success vs Failure
 
 We have the information on whether the launch was a success or a failure. let's have a look at how the number of failures evolved though time.
 
-```{r, fig.height= 5, fig.width=9}
+
+```r
 launches %>% 
   count(category, launch_year) %>% 
   ggplot(aes(x = launch_year, y = n,
@@ -298,9 +333,12 @@ launches %>%
   my_theme
 ```
 
+![](README_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
+
 Sweet. Let's have a look by country, focusing on the countries that send most launches.
 
-```{r, fig.height=8, fig.width=12}
+
+```r
 launches %>% 
   filter(state_name %in% c("China", "France", "Russia", "United States")) %>% 
   count(category, launch_year, state_name_short) %>% 
@@ -321,9 +359,12 @@ launches %>%
   my_theme
 ```
 
+![](README_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+
 It's nice, but I would have to have a look at the proportion of failed launches.
 
-```{r, fig.height=6, fig.width=10}
+
+```r
 launches %>% 
   filter(state_name %in% c("China", "France", "Russia", "United States")) %>% 
   group_by(state_name, launch_year) %>% 
@@ -349,13 +390,16 @@ launches %>%
   my_theme
 ```
 
+![](README_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+
 
 
 # Private vs public lauches
 
 Now I wanted to see whether the launches were mostly made by states or by private companies, and how this varied with time.
 
-```{r, fig.height=6, fig.width=10}
+
+```r
 launches %>% 
   filter(state_bloc != "South_america" & state_bloc != "Middle_east") %>% 
   ggplot(aes(x = launch_year, fill = agency_type) ) +
@@ -374,8 +418,11 @@ launches %>%
   my_theme
 ```
 
+![](README_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
 
-```{r, fig.height=6, fig.width=10}
+
+
+```r
 launches %>% 
   filter(state_bloc != "South_america" & state_bloc != "Middle_east") %>% 
   select(state_bloc, launch_year, agency_type) %>% 
@@ -400,6 +447,8 @@ launches %>%
    scale_x_continuous("", breaks = seq(1960, 2020, 10)) +
   my_theme
 ```
+
+![](README_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
 
 
 
