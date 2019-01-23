@@ -234,3 +234,84 @@ launches %>%
 
 ![](tidytuesday_3_files/figure-html/unnamed-chunk-8-1.png)<!-- -->
 
+
+# Success vs Failure
+
+We also have the information on whether the launch was a success or a failure. Sweet! 
+
+Success vs failure accross time
+
+
+```r
+launches %>% 
+  count(category, launch_year) %>% 
+  ggplot(aes(x = launch_year, y = n,
+             fill = category)) +
+  geom_bar(stat = "identity", 
+            #position = "identity",
+            ) +
+  scale_fill_manual(values = c("#999999", "#E69F00")) +
+    theme_minimal() +
+  theme(panel.grid = element_blank(),
+        strip.text = element_text(face = "bold")) +
+  labs(title = "Number of successfull and failed launches accross time",
+       subtitle = "It seems the number of failed launches decrease with time",
+       x = "Year of launches ",
+       y = "Number of launches",
+       fill = "Launch outcome")
+```
+
+![](tidytuesday_3_files/figure-html/unnamed-chunk-9-1.png)<!-- -->
+
+
+```r
+launches %>% 
+  filter(state_name %in% c("China", "France", "Russia", "United States")) %>% 
+  count(category, launch_year, state_name_short) %>% 
+  ggplot(aes(x = launch_year, y = n,
+             fill = category)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~state_name_short, nrow = 4) +
+  scale_fill_manual(values = c("#999999", "#E69F00")) +
+    theme_minimal() +
+  theme(panel.grid = element_blank(),
+        strip.text = element_text(face = "bold")) +
+  labs(title = "Number of successfull and failed launches accross time",
+       subtitle = "It seems the number of failed launches decrease with time",
+       x = "Year of launches ",
+       y = "Number of launches",
+       fill = "Launch outcome")
+```
+
+![](tidytuesday_3_files/figure-html/unnamed-chunk-10-1.png)<!-- -->
+
+It's nice, but I would have to have a look at the proportion of failed launches.
+
+
+```r
+launches %>% 
+  filter(state_name %in% c("China", "France", "Russia", "United States")) %>% 
+  group_by(state_name, launch_year) %>% 
+  add_tally() %>% 
+  add_count(category) %>% 
+  distinct(state_bloc, launch_year, category, n, nn) %>%  
+  mutate(proportion = nn / n) %>% 
+  ggplot(aes(x = launch_year, y = proportion*100, 
+             fill = category)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~state_name, nrow = 4) +
+  labs(title = "Space mastery increases with time",
+       subtitle = "Countries experienced many failures in their early years. Nowadays, lauches are mostly successfull",
+       x = "Year of launch",
+       y = "Percentage of lauches",
+       fill = "Launch outcome") +
+  scale_fill_manual(values = c("#999999", "#E69F00")) +
+    theme_minimal() +
+  theme_minimal() +
+   theme(panel.grid = element_blank(),
+        strip.text = element_text(face = "bold")) +
+  scale_x_continuous("", breaks = seq(1960, 2020, 10))
+```
+
+![](tidytuesday_3_files/figure-html/unnamed-chunk-11-1.png)<!-- -->
+
