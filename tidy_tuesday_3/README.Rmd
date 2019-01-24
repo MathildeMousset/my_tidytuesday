@@ -15,33 +15,9 @@ editor_options:
   chunk_output_type: console
 ---
 
-# Some thoughs about the #Tidytuesday challenge
 
 This week, I decided to try the [#Tidytuesday](https://github.com/rfordatascience/tidytuesday)twitter challenge. Every week, [Thomas Mock](https://twitter.com/thomas_mock?lang=en) provides a mostly clean dataset for the community to analyse. Past datasets have covered a variety of subjects, from New York restaurant grades to tweets from the #rstat hashtag. These datasets provide excellent opportunities for everybody to try their hands on new data.  
 
-
-This is new to me. I come from an experimental background in plant biology. My typical workflow involves thinking about some interesting questions that I want to answer, design an experiment, perform it, and analyse the data. 
-I usually have in mind the statistical model I want to use to analyse the data *before* performing the experiment. It does not prevent the occasional **"reality happens"** problems, but it helps design good experiments, and avoid the pitfall of *"uhuh, we did not think this really through"*. So I rarely come across a dataset where I am not **deeply** familiar with all columns and the questions that can be asked with it. After all, I probably spent six month to three years waiting for these data...
-
-Recently, I became interested in analysing other people's data. Data that seems to be everywhere on the internet nowadays. So many great questions to ask, it's exhilarating.
-
-However, I quickly realized that there are many challenges associated with this kind of data:  
-- they come in shapes that are not necessarily tidy (while I learned my lesson after my first project, and *enter* my data in a tidy way from the begining),  
-- they often involve lot's of text (what the hell am I supposed to do with *tweets*??),   
-- and there is often an overload of information, which makes it hard to find relevant questions and address them. 
-
-Data vizualisation, analysis and storytelling is an art, and it stung that after years of doing so with my projects, I barely scratched the surface. Time to improve, then...  
-
-The #Tidytuesday challenge provides me with training opportunities :   
-
-- unknown datasets of diverse shapes and focus: this leads me to **learn** new tools, get **fluent** at using the ones I seldom use, get **intuitive** with the ones I use often,  
-
-- a dataset every week: for me, the aim is not to perform a detailed statistical analysis, but to get better at quickly exploring a new dataset: cleaning and reshaping, plotting, finding the big meaningful messages (or some of them); learning not to get lost in the data, not to obsess with going into details for all piece of information. Regular datasets compell me to get working on new things,  
-
-- learn from the community: seeing a lot of people sharing their ideas, figures, code is an incredible opportunity to learn, beside the motivation boost. 
-
-
-# This week's data
 
 [This week's dataset](https://github.com/rfordatascience/tidytuesday/tree/master/data/2019/2019-01-15) was data about space launches across the world. There was one table about agencies responsible for the launches, and a table about the launches. This data was associated with an [article from The Economist](https://www.economist.com/graphic-detail/2018/10/18/the-space-race-is-dominated-by-new-contenders), with a truly beautiful infographics.
 
