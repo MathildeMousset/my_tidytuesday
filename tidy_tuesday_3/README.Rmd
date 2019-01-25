@@ -67,12 +67,18 @@ launches <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytues
 
 I focused mostly on the `launches` table. It was already tidy, so I did not perform great reshaping. However, I wanted to tweak some columns a bit.  
 
-First, I used the `lubridate` package to get the date into a nice, tidy date format. In the end, I don't think I used that column, but anyway, I need to get fluent with dates in R. Here, the `ymd()` function take the `launch_date` and turns it into a year-month-day format.
+First, I used the `lubridate` package to get the date into a nice, tidy date format. Here, the `ymd()` function take the `launch_date` and turns it into a year-month-day format.
+From then, I can use the `month()` function to obtain the month of launch (with the written, non-abbreviated name of month instead of a number), the `weekdays()` function to obtain the day of the week (begining on the Monday), and the `week()` function to obtain the number of the week in the year.
 
 ```{r}
 # Get better date format in lauches
 launches <- launches %>% 
-  mutate(launch_date = ymd(launch_date))
+  mutate(launch_date  = ymd(launch_date),
+         launch_month = month(launch_date, 
+                                label =  TRUE,
+                                abb = FALSE),
+         launch_weekday  = weekdays(launch_date),
+         launch_week_num = week(launch_date))
 ```
 
 I then tried to improve the country names. Some of the code are familiar, some are not, I had to do a little search.  
@@ -379,6 +385,54 @@ launches %>%
 ```
 
 
+# Date of launches
 
+Since the data is so huge, I focus on an early period of the space exploration, and on the past decade.
+
+```{r, fig.height=6, fig.width=10}
+launches %>% 
+  drop_na(launch_month, launch_week_num, launch_weekday, launch_year) %>% 
+  filter(launch_year %in% c(1965:1970)) %>% 
+  count(launch_year, launch_month, 
+        launch_weekday, launch_week_num) %>% 
+  ggplot(aes(x = launch_week_num, 
+             y = launch_weekday)) + 
+  geom_tile(aes(fill = n),colour = "white", na.rm = TRUE) +
+  facet_grid(vars(launch_year), vars(launch_month), 
+             scale = "free") + 
+  scale_fill_viridis(option = "viridis",
+                     direction = -1) +
+  #scale_fill_gradient(low="red", high="yellow") +
+  theme_bw() +
+  labs(title = "Date of launches from 1965 to 1970",
+       x = "Week of the month", 
+       y = "Day of the week",
+       fill = "Number of launches per day") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+```
+
+
+```{r, fig.height=6, fig.width=10}
+launches %>% 
+  drop_na(launch_month, launch_week_num, launch_weekday, launch_year) %>% 
+  filter(launch_year %in% c(2010:2017)) %>% 
+  count(launch_year, launch_month, 
+        launch_weekday, launch_week_num) %>% 
+  ggplot(aes(x = launch_week_num, 
+             y = launch_weekday)) + 
+  geom_tile(aes(fill = n),colour = "white", na.rm = TRUE) +
+  facet_grid(vars(launch_year), vars(launch_month), 
+             scale = "free") + 
+  scale_fill_viridis(option = "viridis",
+                     direction = -1) +
+  theme_bw() +
+  labs(title = "Date of launches from 2010 to 2017",
+       x = "Week of the month", 
+       y = "Day of the week", 
+       fill = "Number of launches per day") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+```
 
 

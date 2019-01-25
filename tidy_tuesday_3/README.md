@@ -15,33 +15,9 @@ editor_options:
   chunk_output_type: console
 ---
 
-# Some thoughs about the #Tidytuesday challenge
 
 This week, I decided to try the [#Tidytuesday](https://github.com/rfordatascience/tidytuesday)twitter challenge. Every week, [Thomas Mock](https://twitter.com/thomas_mock?lang=en) provides a mostly clean dataset for the community to analyse. Past datasets have covered a variety of subjects, from New York restaurant grades to tweets from the #rstat hashtag. These datasets provide excellent opportunities for everybody to try their hands on new data.  
 
-
-This is new to me. I come from an experimental background in plant biology. My typical workflow involves thinking about some interesting questions that I want to answer, design an experiment, perform it, and analyse the data. 
-I usually have in mind the statistical model I want to use to analyse the data *before* performing the experiment. It does not prevent the occasional **"reality happens"** problems, but it helps design good experiments, and avoid the pitfall of *"uhuh, we did not think this really through"*. So I rarely come across a dataset where I am not **deeply** familiar with all columns and the questions that can be asked with it. After all, I probably spent six month to three years waiting for these data...
-
-Recently, I became interested in analysing other people's data. Data that seems to be everywhere on the internet nowadays. So many great questions to ask, it's exhilarating.
-
-However, I quickly realized that there are many challenges associated with this kind of data:  
-- they come in shapes that are not necessarily tidy (while I learned my lesson after my first project, and *enter* my data in a tidy way from the begining),  
-- they often involve lot's of text (what the hell am I supposed to do with *tweets*??),   
-- and there is often an overload of information, which makes it hard to find relevant questions and address them. 
-
-Data vizualisation, analysis and storytelling is an art, and it stung that after years of doing so with my projects, I barely scratched the surface. Time to improve, then...  
-
-The #Tidytuesday challenge provides me with training opportunities :   
-
-- unknown datasets of diverse shapes and focus: this leads me to **learn** new tools, get **fluent** at using the ones I seldom use, get **intuitive** with the ones I use often,  
-
-- a dataset every week: for me, the aim is not to perform a detailed statistical analysis, but to get better at quickly exploring a new dataset: cleaning and reshaping, plotting, finding the big meaningful messages (or some of them); learning not to get lost in the data, not to obsess with going into details for all piece of information. Regular datasets compell me to get working on new things,  
-
-- learn from the community: seeing a lot of people sharing their ideas, figures, code is an incredible opportunity to learn, beside the motivation boost. 
-
-
-# This week's data
 
 [This week's dataset](https://github.com/rfordatascience/tidytuesday/tree/master/data/2019/2019-01-15) was data about space launches across the world. There was one table about agencies responsible for the launches, and a table about the launches. This data was associated with an [article from The Economist](https://www.economist.com/graphic-detail/2018/10/18/the-space-race-is-dominated-by-new-contenders), with a truly beautiful infographics.
 
@@ -62,13 +38,19 @@ I watched part of [Dave Robinson's](https://t.co/5rBN2FPeB1) video on [how it ta
 
 I focused mostly on the `launches` table. It was already tidy, so I did not perform great reshaping. However, I wanted to tweak some columns a bit.  
 
-First, I used the `lubridate` package to get the date into a nice, tidy date format. In the end, I don't think I used that column, but anyway, I need to get fluent with dates in R. Here, the `ymd()` function take the `launch_date` and turns it into a year-month-day format.
+First, I used the `lubridate` package to get the date into a nice, tidy date format. Here, the `ymd()` function take the `launch_date` and turns it into a year-month-day format.
+From then, I can use the `month()` function to obtain the month of launch (with the written, non-abbreviated name of month instead of a number), the `weekdays()` function to obtain the day of the week (begining on the Monday), and the `week()` function to obtain the number of the week in the year.
 
 
 ```r
 # Get better date format in lauches
 launches <- launches %>% 
-  mutate(launch_date = ymd(launch_date))
+  mutate(launch_date  = ymd(launch_date),
+         launch_month = month(launch_date, 
+                                label =  TRUE,
+                                abb = FALSE),
+         launch_weekday  = weekdays(launch_date),
+         launch_week_num = week(launch_date))
 ```
 
 I then tried to improve the country names. Some of the code are familiar, some are not, I had to do a little search.  
@@ -451,6 +433,60 @@ launches %>%
 ![](README_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
 
 
+# Date of launches
 
+Since the data is so huge, I focus on an early period of the space exploration, and on the past decade.
+
+
+```r
+launches %>% 
+  drop_na(launch_month, launch_week_num, launch_weekday, launch_year) %>% 
+  filter(launch_year %in% c(1965:1970)) %>% 
+  count(launch_year, launch_month, 
+        launch_weekday, launch_week_num) %>% 
+  ggplot(aes(x = launch_week_num, 
+             y = launch_weekday)) + 
+  geom_tile(aes(fill = n),colour = "white", na.rm = TRUE) +
+  facet_grid(vars(launch_year), vars(launch_month), 
+             scale = "free") + 
+  scale_fill_viridis(option = "viridis",
+                     direction = -1) +
+  #scale_fill_gradient(low="red", high="yellow") +
+  theme_bw() +
+  labs(title = "Date of launches from 1965 to 1970",
+       x = "Week of the month", 
+       y = "Day of the week",
+       fill = "Number of launches per day") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+```
+
+![](README_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
+
+
+
+```r
+launches %>% 
+  drop_na(launch_month, launch_week_num, launch_weekday, launch_year) %>% 
+  filter(launch_year %in% c(2010:2017)) %>% 
+  count(launch_year, launch_month, 
+        launch_weekday, launch_week_num) %>% 
+  ggplot(aes(x = launch_week_num, 
+             y = launch_weekday)) + 
+  geom_tile(aes(fill = n),colour = "white", na.rm = TRUE) +
+  facet_grid(vars(launch_year), vars(launch_month), 
+             scale = "free") + 
+  scale_fill_viridis(option = "viridis",
+                     direction = -1) +
+  theme_bw() +
+  labs(title = "Date of launches from 2010 to 2017",
+       x = "Week of the month", 
+       y = "Day of the week", 
+       fill = "Number of launches per day") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+```
+
+![](README_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
 
 

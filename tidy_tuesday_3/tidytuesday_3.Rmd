@@ -37,12 +37,12 @@ levels(launches$state_code)
 
 launches <- launches %>% 
   mutate(state_code_clean = fct_collapse(state_code,
-    "RU" = c("SU", "RU"),
-    "FR" = c("F", "I-ELDO", "I-ESA"),
-    "JP" = "J",
-    "IT" = "I",
-    "KY" = "CYM",
-    "GB" = "UK"
+                                         "RU" = c("SU", "RU"),
+                                         "FR" = c("F", "I-ELDO", "I-ESA"),
+                                         "JP" = "J",
+                                         "IT" = "I",
+                                         "KY" = "CYM",
+                                         "GB" = "UK"
   )) %>%
   mutate(state_name = countrycode(state_code_clean, "iso2c", "country.name"),
          state_name_short = fct_lump(state_name, 6)) %>%
@@ -55,8 +55,8 @@ launches <- launches %>%
                                    "South_america" = "BR",
                                    "Middle_east" = c("IR", "IL")))  %>% 
   mutate(category = fct_recode(category,
-                                Success = "O",
-                                Failure = "F"))
+                               Success = "O",
+                               Failure = "F"))
 ```
 
 # Lauches per country
@@ -159,8 +159,8 @@ launches %>%
        y = "Number of lauches",
        colour = "State bloc") +
   scale_fill_brewer(palette = "Set1") +
-   theme_minimal() +
-   theme(panel.grid = element_blank(),
+  theme_minimal() +
+  theme(panel.grid = element_blank(),
         strip.text = element_text(face = "bold"))
 
 
@@ -169,7 +169,7 @@ launches %>%
   count(state_bloc, launch_year, agency_type) %>%
   ggplot(aes(x = launch_year, y = n, 
              fill = agency_type)) +
-   geom_bar(stat ="identity", alpha = 0.7) +
+  geom_bar(stat ="identity", alpha = 0.7) +
   facet_wrap(~state_bloc,  nrow = 4) +
   labs(title = "Number of lauches per state bloc",
        subtitle = "US and USSR dominated the early race, Asia is booming now",
@@ -177,8 +177,8 @@ launches %>%
        y = "Number of lauches",
        colour = "State bloc") +
   scale_fill_brewer(palette = "Set1") +
-   theme_minimal() +
-   theme(panel.grid = element_blank(),
+  theme_minimal() +
+  theme(panel.grid = element_blank(),
         strip.text = element_text(face = "bold"))
 
 ```
@@ -204,7 +204,7 @@ launches %>%
        Fill = "State bloc") +
   scale_fill_brewer(palette = "Set1") +
   theme_minimal() +
-   theme(panel.grid = element_blank(),
+  theme(panel.grid = element_blank(),
         strip.text = element_text(face = "bold"))
 ```
 
@@ -219,7 +219,7 @@ launches %>%
   theme_minimal() +
   theme(panel.grid = element_blank(),
         strip.text = element_text(face = "bold")) +
-    scale_fill_brewer(palette = "Set1") +
+  scale_fill_brewer(palette = "Set1") +
   labs(title = "Who accounts for space launches in different blocs?",
        subtitle = "While in Europe and in the states the market has mostly been privatised, state accounts for most lauches in Asia and Russia",
        x = "Year of launch",
@@ -232,12 +232,12 @@ launches %>%
 ```{r}
 launches %>% 
   filter(state_name %in% c("United States", "Russia")) %>%
-   ggplot(aes(x = launch_year, fill = state_name)) +
+  ggplot(aes(x = launch_year, fill = state_name)) +
   geom_area(stat = "bin", 
             position = "identity",
             bins = 30, alpha = 0.6) +
   scale_fill_manual(values = c("#999999", "#E69F00")) +
-    theme_minimal() +
+  theme_minimal() +
   theme(panel.grid = element_blank(),
         strip.text = element_text(face = "bold")) +
   labs(title = "Space race: US vs Russia",
@@ -260,10 +260,10 @@ launches %>%
   ggplot(aes(x = launch_year, y = n,
              fill = category)) +
   geom_bar(stat = "identity", 
-            #position = "identity",
-            ) +
+           #position = "identity",
+  ) +
   scale_fill_manual(values = c("#999999", "#E69F00")) +
-    theme_minimal() +
+  theme_minimal() +
   theme(panel.grid = element_blank(),
         strip.text = element_text(face = "bold")) +
   labs(title = "Number of successfull and failed launches accross time",
@@ -282,7 +282,7 @@ launches %>%
   geom_bar(stat = "identity") +
   facet_wrap(~state_name_short, nrow = 4) +
   scale_fill_manual(values = c("#999999", "#E69F00")) +
-    theme_minimal() +
+  theme_minimal() +
   theme(panel.grid = element_blank(),
         strip.text = element_text(face = "bold")) +
   labs(title = "Number of successfull and failed launches accross time",
@@ -312,10 +312,69 @@ launches %>%
        y = "Percentage of lauches",
        fill = "Launch outcome") +
   scale_fill_manual(values = c("#999999", "#E69F00")) +
-    theme_minimal() +
   theme_minimal() +
-   theme(panel.grid = element_blank(),
+  theme_minimal() +
+  theme(panel.grid = element_blank(),
         strip.text = element_text(face = "bold")) +
   scale_x_continuous("", breaks = seq(1960, 2020, 10))
 ```
 
+
+# Look at launches over time
+
+```{r}
+launches <- launches %>% 
+  mutate(launch_month   = month(launch_date, 
+                                label =  TRUE,
+                                abb = FALSE),
+         launch_weekday  = weekdays(launches$launch_date),
+         launch_week     = wday(launch_date, week_start = 1),
+         launch_week_num = week(launch_date)) %>% 
+  mutate_at(vars(launch_week, launch_week_num), as.factor)
+```
+
+
+```{r}
+launches %>% 
+  drop_na(launch_month, launch_week_num, launch_weekday, launch_year) %>% 
+  filter(launch_year %in% c(1965:1970)) %>% 
+  count(launch_year, launch_month, 
+        launch_weekday, launch_week_num) %>% 
+  ggplot(aes(x = launch_week_num, 
+             y = launch_weekday)) + 
+  geom_tile(aes(fill = n),colour = "white", na.rm = TRUE) +
+  facet_grid(vars(launch_year), vars(launch_month), 
+             scale = "free") + 
+  scale_fill_viridis(option = "viridis",
+                     direction = -1) +
+  #scale_fill_gradient(low="red", high="yellow") +
+  theme_bw() +
+  labs(title = "Date of launches from 1965 to 1970",
+       x = "Week of the month", 
+       y = "Day of the week") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+```
+
+
+```{r}
+launches %>% 
+  drop_na(launch_month, launch_week_num, launch_weekday, launch_year) %>% 
+  filter(launch_year %in% c(2010:2017)) %>% 
+  count(launch_year, launch_month, 
+        launch_weekday, launch_week_num) %>% 
+  ggplot(aes(x = launch_week_num, 
+             y = launch_weekday)) + 
+  geom_tile(aes(fill = n),colour = "white", na.rm = TRUE) +
+  facet_grid(vars(launch_year), vars(launch_month), 
+             scale = "free") + 
+  scale_fill_viridis(option = "viridis",
+                     direction = -1) +
+  #scale_fill_gradient(low="red", high="yellow") +
+  theme_bw() +
+  labs(title = "Date of launches from 2010 to 2017",
+       x = "Week of the month", 
+       y = "Day of the week") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+```
