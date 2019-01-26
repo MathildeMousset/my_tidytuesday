@@ -123,6 +123,32 @@ summary_prison %>%
 ![](analysis_1_files/figure-html/unnamed-chunk-2-1.png)<!-- -->
 
 
+# County type and gender
+
+Wow! I expected some differences of rate of incarceration between men and women, but not *that* strong. Interestingly, the strong difference between county types seem to reflect differences in incarceration rates for guys rather than for females. I am not sure why.
+
+
+```r
+summary_prison %>% 
+  filter(pop_category %in% c("Male", "Female")) %>% 
+  filter(year > 1989) %>% 
+  ggplot(aes(x = year,
+             y = rate_per_100000,
+             colour = urbanicity)) +
+  geom_line(size = 2.5) +
+  labs(title = "Rates of prison incarcerations (for every 100,000 persons)",
+       subtitle = "The incarceration rates differ a lot by gender", 
+       x = "Year",
+       y = "Rate for 100,000",
+       colour = "Type of county") +
+  facet_wrap(vars(pop_category)) +
+  theme_ipsum_rc() +
+  scale_colour_brewer(palette = "Paired")
+```
+
+![](analysis_1_files/figure-html/unnamed-chunk-3-1.png)<!-- -->
+
+
 So far I am limited by the data, and also by how little I know about United States demography and social economics to go much further with these plots. I will have to dive into the other datasets to learn more.
 
 
