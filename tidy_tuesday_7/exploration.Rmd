@@ -1,0 +1,375 @@
+---
+title: "Tidytuesday 7"
+author: "Mathilde Mousset"
+date: "19 février 2019"
+output: 
+  prettydoc::html_pretty:
+    keep_md: yes
+    theme: leonids
+    highlight: github
+    toc: yes
+  html_document: 
+    keep_md: yes
+    theme: cosmo
+    toc: yes
+editor_options: 
+  chunk_output_type: console
+---
+
+This week [Tidytuesday's data](https://github.com/rfordatascience/tidytuesday/tree/master/data/2019/2019-02-12) concern US research and development budget. There are three datasets, concerning the budget of 14 national agencies, with data for R&D, climate and energy.
+
+I will focus on the research and development budget. I wish to know which agencies get the highest funding, and how research fundings evolved in the past 40 years. I kind of suspect that they decreased, and I would like to check it.
+
+Also, I will learn from Otho Mantegazza, who did some nice clustering. Since I very rarelly used these tools, I thought it would be good to try to replicate his code.
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readxl)
+library(hrbrthemes)
+
+library(scales) # To scale things + pretty percents axis
+library(superheat) # for heatmaps
+
+#viridis(5, option = "inferno")
+```
+
+
+First we import the data.
+
+```{r import_data}
+
+# climate_spending <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-02-12/climate_spending.csv")
+
+
+# energie_spending <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-02-12/energy_spending.csv")
+
+read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-02-12/fed_r_d_spending.csv") %>% mutate(rd_budget_billion = rd_budget/(10^9)) -> feder_spendings
+```
+
+We have a first look at the structure of the data. The data.frame is pretty straightforward: 
+- `department` the abbreviated name of the federal agencies
+- `year`
+- `rd_budget` the budget for research and developement
+- `total_outlays` the money actually paid out by the U.S. Treasury
+- `GDP` the Gross Domestic Product, which represent the US economy
+- `discretionary_outlays` represent the part of the budget that pays for governmental programs. These spending levels are set each year by Congress. Yes, I had to go and look for the [meaning]("https://www.nationalpriorities.org/budget-basics/federal-budget-101/spending/")
+
+I also created a column with the R&D budget in billions, because the numbers are easier to grasp then.
+
+```{r}
+glimpse(feder_spendings)
+```
+
+
+## Total R&D budget
+
+Since we are dealing with data through time, and with 14 categories, two types of visualization jumped to my mind: a heatmap and a line plot. Both of them are pretty easy to make with `ggplot2`.
+
+From the heatmap, what is obvious is that some agencies receive far more budget than some others. **DOD** stands for the department of defense, and it seemed to be the singlest most funded agency. Anybody with even a varnish of history knowledge about the U.S. will expect that. **NASA** also have high founding, which is not totally surprising, especially given the data on Space Launches that we explored for #Tidytuesday week 3. The two remaining agencies that stand out, **HHS** and **DOE** concern human health.
+
+```{r, heatmap_1}
+feder_spendings %>% 
+  ggplot(aes(x = department, y = year, 
+             fill = rd_budget_billion)) +
+  coord_flip() +
+  geom_tile() +
+  labs(title = "R&D budget per agency and year",
+       y = "Year",
+       x = "Federal agency",
+       fill = "Inlfation adjusted budget\n(billion $)",
+       subtitle = "Department (DOD), health (NIH, HHS) and energy (DOE) \nhave the highest founding...",
+       caption = "Source data: American Association for the Advancement of Science\nInflation adjusted dollars") +
+  scale_fill_viridis_c(option = "inferno") +
+  theme_ipsum_tw()
+```
+
+Because of the huge variation of fundings between agencies, this representation limits us in seeing the finer patterns. So let's go back to good old line graphs. Since we already know which agencies are the most founded, I make a plot be agency, with free *y* scale.
+
+
+```{r lines_1, fig.height= 15, fig.width=12}
+feder_spendings %>% 
+  ggplot(aes( x = year, y = rd_budget_billion, 
+              colour = department, 
+              fill   = department)) +
+  facet_wrap(~department, scales = "free_y", ncol = 3) +
+  geom_line(size = 1) +
+  geom_area(alpha = 0.5) +
+  geom_point(size = 2) +
+  
+  labs(title = "R&D budget per agency and year",
+       x = "Year",
+       y = "Inflation-adjusted budget (billion $)",
+       colour = "",
+       caption = "Source data: American Association for the Advancement of Science") +
+  scale_colour_viridis_d(option = "inferno") +
+  scale_fill_viridis_d(option = "inferno") +
+  theme_ipsum_tw() +
+  theme(legend.position = "none",
+        panel.grid.major = element_blank(),
+        strip.text = element_text(face = "bold"))
+```
+
+We can see that the budget of defense has steadily risen, with a bump in after year 2000. **NASA** budget was brutally reduced during the mid-eighties, but recovered and has been mostly stable since.The **NIH** and **NSF** budget have slowly increased over years, also **NIH** is now stagnating.
+
+## Relative to total federal budget
+
+Now, let's have a look at how much percent of the total federal budget is invested in these agencies. This informs us on the politic decisions on budget allocation between the different services.
+
+
+```{r lines_2, fig.height = 15, fig.width=12}
+feder_spendings %>% 
+  mutate(rd_rate = rd_budget / total_outlays) %>% 
+  
+  ggplot(aes(x = year, y = rd_rate, 
+             colour = department, 
+             fill   = department)) +
+  facet_wrap(~department, scales = "free_y", ncol = 3) +
+  
+  geom_line(size = 1) +
+  geom_area(alpha = 0.5) +
+  geom_point(size = 2) +
+  
+  labs(title = "Percentage of total federal budget invested in R&D in the USA",
+       y = "Year",
+       subtitle = "...but massive decrease of R&D founding over years (relative to total budget)",
+       x = "Percentage of US budget",
+       caption = "Source data: American Association for the Advancement of Science") +
+  
+  scale_colour_viridis_d(option = "inferno") +
+  scale_fill_viridis_d(option = "inferno") +
+  scale_y_continuous(labels = scales::percent) +
+  
+  theme_ipsum_tw() +
+  theme(legend.position = "none",
+        panel.grid.major = element_blank(),
+        strip.text = element_text(face = "bold"))
+```
+
+
+
+## Relative to GDP
+
+If we now investigate what the different budget represent compared to the GDP of the U.S.
+
+```{r lines_3, fig.height = 15, fig.width=12}
+feder_spendings %>% 
+  mutate(rd_rate = rd_budget / gdp) %>% 
+  
+  ggplot(aes( x = year, y = rd_rate, 
+              colour = department, 
+              fill   = department)) +
+  facet_wrap(~department, scales = "free_y", ncol = 3) +
+  
+  geom_line(size = 1) +
+  geom_area(alpha = 0.5) +
+  geom_point(size = 2) +
+  
+  labs(title = "Percentage of GDP invested in R&D in the USA",
+       x = "Year",
+       subtitle = "Massive decrease of R&D founding over years (relative to GDP)",
+       y = "R&D budget as percents of GPD",
+       colour = "",
+       caption = "Source data: American Association for the Advancement of Science") +
+  scale_colour_viridis_d(option = "inferno") +
+  scale_fill_viridis_d(option = "inferno") +
+  theme_ipsum_tw() +
+  theme(legend.position = "none",
+        panel.grid.major = element_blank(),
+        strip.text = element_text(face = "bold"))
+```
+
+In recent year, the budget invested in research and development, compared to the GDP has been decreasing for pretty much all agencies.
+
+# Cumulative budget over years
+
+If we add the total amount of money invested in R&D fr each agencies over the forty years:
+
+```{r make_df}
+feder_spendings %>% 
+  group_by(department) %>% 
+  summarise(total_founded = sum(rd_budget, na.rm = TRUE),
+            total_budget  = sum(total_outlays, na.rm = TRUE)) %>% 
+  mutate(total_founded_billions = total_founded / (10^9),
+         rd_rate = total_founded/total_budget,
+         department = fct_reorder(department, rd_rate)) -> feder_total
+```
+
+Here again, we can see that the U.S. invested a *huge* amount of money in R&D for defence (over 2500 billion $) over the years. I cannot even understand what that sum of money means.
+They invested a bit less than 2000 billion $ in health.
+
+```{r col_1}
+ggplot(data = feder_total,
+       aes(x = department, y = total_founded_billions)) +
+  coord_flip() +
+  geom_col() +
+  geom_col(data = filter(feder_total, 
+                         department == "DOD"),
+           fill =  "#56106EFF") +
+  geom_col(data = filter(feder_total, 
+                         department == "NIH" | department == "HHS"),
+           fill = "#BB3754FF") +
+  geom_col(data = filter(feder_total, 
+                         department == "NSF"),
+           fill = "#F98C0AFF") +
+  
+  labs(title = "Total R&D budget per agency, 1976-2018",
+       y = "R&D budget (billion $)",
+       x = "Federal agency",
+       subtitle = "Total invesments in the past 40 years have been huge in defence, and moderate in health",
+       caption = "Source data: American Association for the Advancement of Science\nInflation adjusted dollars") +
+  theme_ipsum_tw()
+```
+
+
+# A litte focus on NSF
+
+As a biologist, the **NSF** would be the main funding agency if I were working in the U.S., so let's single it out.
+
+
+```{r nsf_1}
+feder_spendings %>% 
+  filter(department == "NSF") %>% 
+  ggplot(aes(x = year, y = rd_budget_billion,
+             colour = department,
+             fill = department)) +
+  geom_line(size = 1) +
+  geom_area(alpha = 0.5) +
+  geom_point(size = 2) +
+  
+  labs(title = "National Science Fundation budget 1976-2017",
+       subtitle = "The total budget of the NSF increases with time...",
+       x = "",
+       y = "Inflation-adjusted budget (billion $)",
+       colour = "",
+       caption = "Source data: American Association for the Advancement of Science") +
+  scale_colour_viridis_d(option = "inferno") +
+  scale_fill_viridis_d(option = "inferno") +
+  theme_ipsum_tw() +
+  theme(legend.position = "none",
+        panel.grid.major = element_blank())
+```
+
+
+
+```{r nsf_2}
+feder_spendings %>% 
+  filter(department == "NSF") %>% 
+  mutate(rd_rate = rd_budget / gdp) %>% 
+  ggplot(aes(x = year, y = rd_rate,
+             colour = department,
+             fill = department)) +
+  geom_line(size = 1) +
+  geom_area(alpha = 0.5) +
+  geom_point(size = 2) +
+  
+  labs(title = "NSF fundings relative to GPD, 1976-2017",
+       subtitle = "... but fundings relative to GPD crash",
+       x = "Year",
+       y = "NSF budget as percents of GPD",
+       colour = "",
+       caption = "Source data: American Association for the Advancement of Science") +
+  scale_colour_viridis_d(option = "inferno") +
+  scale_fill_viridis_d(option = "inferno") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_ipsum_tw() +
+  theme(legend.position = "none",
+        panel.grid.major = element_blank())
+```
+
+
+# From Otho
+
+https://otho.netlify.com/post/government-funding/
+
+Otho looked at correlations, and then clustered agencies by similarity of founding patterns
+
+
+## Correlations
+
+```{r}
+rd_wide <- 
+  feder_spendings %>% 
+  select(department, year, rd_budget) %>% 
+  tidyr::spread(key = department,
+                value = rd_budget)
+```
+
+
+```{r}
+# correlation of everything against everything
+rd_wide %>%
+  column_to_rownames("year") %>%
+  # Test correlation
+  cor() %>% 
+  # visualize
+  as_tibble(rownames = "agency") %>% 
+  gather(DHS:VA, key = "agency_2", value = "corr") %>% 
+  ggplot(aes(x = agency,
+             y = agency_2,
+             fill = corr)) +
+  geom_tile() + 
+  scale_fill_viridis_c() +
+  theme(aspect.ratio = 1,
+        axis.text.x = element_text(angle = 90, hjust = .5))
+```
+
+## Clustering
+
+>> With clusters, we want to capture the behaviour of our variables. Meaning that we want to capture how one variable behaves compared to another: when one variable increases in value, does the other do the same?  
+
+>> So, to make variables comparable, we must scale them.
+
+>> Probably, the most common scaling is by z-scores. But, because z-scores are centered at 0. This introduces negative numbers, but spendings for R&D agencies are (hopefully ;) ) never negative.
+
+>> Thus, I decided to rescale spendings for each agency between 0 and 1, in this way we can make them comparable and present them in a more intuitive way. Moreover, this kind of scaling preserves 0 as anchored point.
+
+```{r}
+# scale each variable between 0 and 1
+rd_wide_01 <- 
+  rd_wide %>%
+  mutate_at(vars(-contains("year")),
+            ~scales::rescale(., to = c(0,1),
+                             from = c(0, max(.))))
+
+
+# this is how it looks after scaling
+rd_wide_01 %>% print()
+```
+
+>> After scaling, I tried hierachical clustering. But, clustering functions such as hclust() or kmeans(), by default, cluster the rows of a dataset: we must to modify the format of the data again.
+
+>> This time we transpose the data with t(), to exchange rows and columns.
+
+```{r}
+# For clustering
+# we need to transpose the data
+# because dist() %>% clusters the columns
+rd_for_clust <-   
+  rd_wide_01 %>%
+  column_to_rownames("year") %>%
+  t() 
+
+rd_hclust <-
+  rd_for_clust %>% 
+  dist() %>%
+  hclust() 
+```
+
+Let's visualize the results
+
+```{r}
+rd_hclust %>% plot()
+```
+
+```{r}
+rd_for_clust %>% 
+  superheat::superheat(row.dendrogram = TRUE,
+                       left.label.text.size = 3,
+                       bottom.label.text.angle = 90,
+                       bottom.label.text.size = 3,
+                       grid.hline.col = "grey40",
+                       grid.vline.col = "grey40")
+```
+

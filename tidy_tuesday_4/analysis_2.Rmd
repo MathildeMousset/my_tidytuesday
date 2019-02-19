@@ -1,0 +1,145 @@
+---
+title: "Untitled"
+author: "Mathilde Mousset"
+date: "26 janvier 2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(viridis)
+library(hrbrthemes)
+
+library(sf)
+library(tigris)
+library(gganimate)
+
+load("././data.RData")
+```
+and I want to plot things on maps! I used R to make map of my populations, or field work samples, but this dataset seems like a good occasion to learn more on visualizing data on maps. So my aims for this post are: pretty graphs and pretty maps.
+
+
+
+
+
+# Exploration
+
+I am interested in pre-trial data, so the number or percentage of people who go through jail before their trial. This time I will investigate the `pretrial_population` dataset. This dataset has nine columns:  
+- `year`: the year of the census, from 1970  
+- `state`: abbreviated names of states  
+- `county_name`: name of the county within state    
+- `urbanicity`: as explained in the part 1, urbanicity represent the size and type of county (small and rural vs bigger and urban to very big urban areas)    
+- `region`: the region delimitation in the USA    
+- `dividion`: same as before, but finer  
+- `pop_category`: labels that describe some aspects of the population  
+- `population`: number of persons in the county 
+- `pretrial_population`: number of persons in jail
+
+So the first thing will be to get the ratio of people in jail compared to the county population.
+
+```{r prison_rate}
+pretrial_population <- pretrial_population %>% 
+  mutate(incarceration_rate = pretrial_population*1000/population)
+```
+
+I also built a state summary of the jail population
+
+```{r by_state}
+pretrial_population_state <- pretrial_population %>%
+  group_by(year, state, pop_category) %>% 
+  summarise(population = sum(population, na.rm = TRUE),
+            pretrial_population = sum(pretrial_population, na.rm = TRUE)) %>% 
+  mutate(incarceration_rate = (pretrial_population / population) * 1000) %>% 
+  ungroup()
+```
+
+
+
+Now, I will explore the missing data. I am afraid I was spoiled by other's explorations of this dataset, I already know that there are many missing data. Let's get a feel about them.
+
+```{r}
+pretrial_population
+```
+
+
+
+# Get some maps going
+
+
+
+## Per state, Total population
+
+From / Inspired from: http://www.rjsdatascience.com/post/prison-rate/
+
+
+```{r}
+library(tigris)
+state_sf <- states(class = "sf")
+
+state_prison_map <- state_sf %>% 
+  left_join(pretrial_population_state, by = c("STUSPS" = "state"))
+
+# Removing Hawai and Alaska to make mapping easier
+state_prison_map %>% 
+  filter(year == 2015, 
+         pop_category == "Total", 
+         !STUSPS %in% c("AK", "HI")) %>% 
+  ggplot() +
+  geom_sf(aes(fill = incarceration_rate)) +
+  labs(title = "Incarceration rates in jail in 2015",
+       subtitle = "Data: USA, 2015, rates as 1 per 1000 individuals",
+       fill = "Incarceration rates\n(1 per 1000)") +
+  theme_ipsum_rc() +
+  scale_fill_viridis_c(direction = -1)
+```
+
+Animation in time
+
+
+```{r}
+animated_jail_states <- state_prison_map %>% 
+  filter(year %in% c(2014:2016)) %>% 
+  filter(pop_category == "Total", 
+         !STUSPS %in% c("AK", "HI")) %>% 
+  ggplot() +
+  geom_sf(aes(fill = incarceration_rate)) +
+  transition_time(as.integer(year)) +
+  labs(title = "Incarceration rates in jail in {frame_time}",
+       subtitle = "Data: USA, {frame_time}",
+       fill = "Rate in jail\n(1 per 1000)",
+       x = "",
+       y = "") +
+  theme_ipsum_rc() +
+  scale_fill_viridis_c()
+
+animate(animated_jail_states)
+anim_save("././map_ani.gif")
+```
+
+
+
+
+
+
+# Other maps
+
+```{r}
+library(ggplot2)
+library(usmap)
+
+map_data("usa", region = "state") %>% 
+  tbl_df()
+
+state.fips
+state.abb
+state.area
+state.division
+state.name
+
+map_data("state")
+```
+

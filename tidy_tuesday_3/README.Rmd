@@ -164,6 +164,7 @@ launches %>%
 
 
 
+
 Let's have a look at the launches across time per country.  
 
 ```{r, fig.height= 10, fig.width=10}

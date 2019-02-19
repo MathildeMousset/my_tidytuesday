@@ -24,7 +24,7 @@ library(hrbrthemes)
 
 # incarceration_trends <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-01-22/incarceration_trends.csv")
 # 
-# summary_pretrial <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-01-22/pretrial_summary.csv")
+ summary_pretrial <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-01-22/pretrial_summary.csv")
 # 
 summary_prison <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-01-22/prison_summary.csv")
 
@@ -32,12 +32,12 @@ summary_prison <- read.csv("https://raw.githubusercontent.com/rfordatascience/ti
 # 
 # pretrial_population <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-01-22/pretrial_population.csv")
 # 
-# save(incarceration_trends,
-#      summary_pretrial,
-#      summary_prison,
-#      prison_population,
-#      pretrial_population, 
-#      file = "././data.RData")
+ save(incarceration_trends,
+      summary_pretrial,
+      summary_prison,
+      prison_population,
+      pretrial_population, 
+      file = "././data.RData")
 # 
 # load("././data.RData")
 ```
