@@ -1,0 +1,107 @@
+---
+title: "Untitled"
+author: "Mathilde Mousset"
+date: "19 février 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# From Otho
+
+Also, I will learn from Otho Mantegazza, who did some nice clustering. Since I very rarelly used these tools, I thought it would be good to try to replicate his code.
+
+https://otho.netlify.com/post/government-funding/
+
+Otho looked at correlations, and then clustered agencies by similarity of founding patterns
+
+
+## Correlations
+
+```{r}
+rd_wide <- 
+  feder_spendings %>% 
+  select(department, year, rd_budget) %>% 
+  tidyr::spread(key = department,
+                value = rd_budget)
+```
+
+
+```{r}
+# correlation of everything against everything
+rd_wide %>%
+  column_to_rownames("year") %>%
+  # Test correlation
+  cor() %>% 
+  # visualize
+  as_tibble(rownames = "agency") %>% 
+  gather(DHS:VA, key = "agency_2", value = "corr") %>% 
+  ggplot(aes(x = agency,
+             y = agency_2,
+             fill = corr)) +
+  geom_tile() + 
+  scale_fill_viridis_c() +
+  theme(aspect.ratio = 1,
+        axis.text.x = element_text(angle = 90, hjust = .5))
+```
+
+## Clustering
+
+>> With clusters, we want to capture the behaviour of our variables. Meaning that we want to capture how one variable behaves compared to another: when one variable increases in value, does the other do the same?  
+
+>> So, to make variables comparable, we must scale them.
+
+>> Probably, the most common scaling is by z-scores. But, because z-scores are centered at 0. This introduces negative numbers, but spendings for R&D agencies are (hopefully ;) ) never negative.
+
+>> Thus, I decided to rescale spendings for each agency between 0 and 1, in this way we can make them comparable and present them in a more intuitive way. Moreover, this kind of scaling preserves 0 as anchored point.
+
+```{r}
+# scale each variable between 0 and 1
+rd_wide_01 <- 
+  rd_wide %>%
+  mutate_at(vars(-contains("year")),
+            ~scales::rescale(., to = c(0,1),
+                             from = c(0, max(.))))
+
+
+# this is how it looks after scaling
+rd_wide_01 %>% print()
+```
+
+>> After scaling, I tried hierachical clustering. But, clustering functions such as hclust() or kmeans(), by default, cluster the rows of a dataset: we must to modify the format of the data again.
+
+>> This time we transpose the data with t(), to exchange rows and columns.
+
+```{r}
+# For clustering
+# we need to transpose the data
+# because dist() %>% clusters the columns
+rd_for_clust <-   
+  rd_wide_01 %>%
+  column_to_rownames("year") %>%
+  t() 
+
+rd_hclust <-
+  rd_for_clust %>% 
+  dist() %>%
+  hclust() 
+```
+
+Let's visualize the results
+
+```{r}
+rd_hclust %>% plot()
+```
+
+```{r}
+rd_for_clust %>% 
+  superheat::superheat(row.dendrogram = TRUE,
+                       left.label.text.size = 3,
+                       bottom.label.text.angle = 90,
+                       bottom.label.text.size = 3,
+                       grid.hline.col = "grey40",
+                       grid.vline.col = "grey40")
+```
+
